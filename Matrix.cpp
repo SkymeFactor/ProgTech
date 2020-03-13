@@ -304,15 +304,11 @@ Matrix Matrix::operator - (double val) {
 
 Matrix Matrix::operator ^ (const double &deg) {
     Matrix PowMx;
-    PowMx = (*this).T();
-    for (int i = 1; i < deg; i++){
-        //if (i % 2 != 0){
-        //    PowMx = PowMx.dot((*this).T());
-        //}
-        //else {
-        //    PowMx = PowMx.dot(*this);
-        //}
-        ///TODO: fix the issues.
+    PowMx = (*this);
+    for (int i = 0; i < PowMx.row_size; i++){
+        for (int j = 0; j < PowMx.col_size; j++){
+            PowMx.matrix[i][j] = std::pow(PowMx.matrix[i][j], deg);
+        }
     }
     return PowMx;
 };
