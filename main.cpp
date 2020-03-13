@@ -22,7 +22,7 @@ int main (int argc, char ** argv) {
     std::cout << "Matrix multiplyed by scalar:\n";
     (a * 0.03).print();
     std::cout << "Dot product:\n";
-    (a.dot(a.T()+6)).print();
+    (a.dot(a.T() + 6)).print();
     std::cout << "Power of matrix:\n";
     (a ^ 3.0).print();
     std::cout << "Loaded matrix:\n";
@@ -39,7 +39,11 @@ int main (int argc, char ** argv) {
     std::cout << "Log matrix:\n";
     (b.log()).print();
     std::cout << "Reshaped matrix:\n";
-    (b.reshape(1, -1)).print();
+    b = b.reshape(1, -1);
+    b.print();
+    std::cout << "Broadcasted matrix [1x1]:\n";
+    a = Matrix(1, 1) + 1;
+    (broadcast(a, std::make_tuple(2, 2) )).print();
     //b.T().print();
     
     return 0;

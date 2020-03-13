@@ -45,7 +45,7 @@ public:
     Matrix mean (const int &);
     Matrix log ();
     Matrix exp ();
-    friend tuple<Matrix> broadcast (Matrix &, tuple<int, int> &);
+    friend Matrix broadcast (Matrix &, tuple<int, int>);
     Matrix operator * (Matrix &);
     Matrix operator * (double);
     Matrix operator + (Matrix &);

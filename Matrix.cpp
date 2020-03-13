@@ -228,27 +228,38 @@ Matrix Matrix::exp() {
     return ExpMX;
 };
 
-///TODO: implement the broadcast function
-tuple<Matrix> broadcast (Matrix &Mx, tuple<int, int> &shape) {
-    int width = std::get<1>(Mx.shape());
-    int height = std::get<0>(Mx.shape());
-    int desire_w = std::get<1>(shape);
-    int desire_h = std::get<0>(shape);
 
-    if (width == desire_w || width == 1){
+Matrix broadcast (Matrix &Mx, tuple<int, int> shape) {
+    int cols = std::get<1>(Mx.shape());
+    int rows = std::get<0>(Mx.shape());
+    int desire_c = std::get<1>(shape);
+    int desire_r = std::get<0>(shape);
+    Matrix BroadcastMx = Mx;
 
+    if (cols == 1){
+        BroadcastMx.col_size = desire_c;
+        for (int j = 0; j < rows; j++)
+            for (int i = 1; i < desire_c; i++){
+                BroadcastMx.matrix[j].push_back(BroadcastMx.matrix[j][0]);
+            }
     }
-    else {
-        throw std::runtime_error("Error: Matrix (" + to_string(width) + ", " + to_string(height) +
-            ") cannot be broadcasted to shape (" + to_string(desire_w) + ", " + to_string(desire_h) + ")!\n");
+    else if (cols != desire_c) {
+        throw std::runtime_error("Error: Matrix (" + to_string(cols) + ", " + to_string(rows) +
+            ") cannot be broadcasted to shape (" + to_string(desire_c) + ", " + to_string(desire_r) + ")!\n");
     }
-    if (width == desire_w || width == 1){
 
+    if (rows == 1){
+        BroadcastMx.row_size = desire_r;
+        for (int i = 1; i < desire_r; i++){
+            BroadcastMx.matrix.push_back(BroadcastMx.matrix[0]);
+        }
     }
-    else {
-        throw std::runtime_error("Error: Matrix (" + to_string(width) + ", " + to_string(height) +
-            ") cannot be broadcasted to shape (" + to_string(desire_w) + ", " + to_string(desire_h) + ")!\n");
+    else if (rows != desire_r) {
+        throw std::runtime_error("Error: Matrix (" + to_string(cols) + ", " + to_string(rows) +
+            ") cannot be broadcasted to shape (" + to_string(desire_c) + ", " + to_string(desire_r) + ")!\n");
     }
+
+    return BroadcastMx;
 };
 
 ///TODO: implement operations over matrixes
