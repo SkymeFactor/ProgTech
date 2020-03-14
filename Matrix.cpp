@@ -5,8 +5,6 @@
 #include <tuple>
 #include <math.h>
 
-using namespace std;
-
 Matrix::Matrix(){
     this->row_size = 1;
     this->col_size = 1;
@@ -33,7 +31,7 @@ Matrix::Matrix (vector<vector<double>> data) {
 
 Matrix Matrix::dot (const Matrix &mtx) {
     if (this->row_size != mtx.col_size) {
-        throw std::runtime_error("Matrixes aren't compatable!");
+        throw std::runtime_error("Matrixes aren't compatible!");
     }
     Matrix dotProduct(this->row_size, mtx.col_size);
     for (int i = 0; i < this->row_size; i++) {
@@ -80,7 +78,7 @@ Matrix Matrix::sum (const int &axis) {
         }
     }
     else  {
-        throw std::runtime_error("Error: There is no " + to_string(axis) + " axis!\n");
+        throw std::runtime_error("Error: There is no " + std::to_string(axis) + " axis!\n");
     }
     
     return Sum;
@@ -108,7 +106,7 @@ Matrix Matrix::argmax (const int &axis) {
         }
     }
     else {
-        throw std::runtime_error("Error: There is no " + to_string(axis) + " axis!\n");
+        throw std::runtime_error("Error: There is no " + std::to_string(axis) + " axis!\n");
     }
     return argmaxMx;
 };
@@ -134,13 +132,13 @@ Matrix Matrix::max (const int &axis) {
         }
     }
     else {
-        throw std::runtime_error("Error: There is no " + to_string(axis) + " axis!\n");
+        throw std::runtime_error("Error: There is no " + std::to_string(axis) + " axis!\n");
     }
     return maxMx;
 };
 
 tuple<int, int> Matrix::shape () {
-    return make_tuple(this->row_size, this->col_size);
+    return std::make_tuple(this->row_size, this->col_size);
 };
 
 Matrix Matrix::reshape (int rows, int cols) {
@@ -151,7 +149,7 @@ Matrix Matrix::reshape (int rows, int cols) {
         cols = size / rows;
     }
     if ( (cols * rows) != size) {
-        throw std::runtime_error("Cannot reshape, arrays have incompatable size!");
+        throw std::runtime_error("Cannot reshape, arrays have incompatible size!");
     }
 
     Matrix reshapedMx = Matrix (rows, cols);
@@ -203,7 +201,7 @@ Matrix Matrix::mean (const int &axis) {
             meanMx.matrix[i][0] = meanMx.matrix[i][0] / this->col_size;
     }
     else {
-        throw std::runtime_error("Error: There is no " + to_string(axis) + " axis!\n");
+        throw std::runtime_error("Error: There is no " + std::to_string(axis) + " axis!\n");
     }
     return meanMx;
 };
@@ -229,12 +227,12 @@ Matrix Matrix::exp() {
 };
 
 
-Matrix broadcast (Matrix &Mx, tuple<int, int> shape) {
-    int cols = std::get<1>(Mx.shape());
-    int rows = std::get<0>(Mx.shape());
+Matrix Matrix::broadcast (tuple<int, int> shape) {
+    int cols = this->col_size;
+    int rows = this->row_size;
     int desire_c = std::get<1>(shape);
     int desire_r = std::get<0>(shape);
-    Matrix BroadcastMx = Mx;
+    Matrix BroadcastMx = (*this);
 
     if (cols == 1){
         BroadcastMx.col_size = desire_c;
@@ -244,8 +242,8 @@ Matrix broadcast (Matrix &Mx, tuple<int, int> shape) {
             }
     }
     else if (cols != desire_c) {
-        throw std::runtime_error("Error: Matrix (" + to_string(cols) + ", " + to_string(rows) +
-            ") cannot be broadcasted to shape (" + to_string(desire_c) + ", " + to_string(desire_r) + ")!\n");
+        throw std::runtime_error("Error: Matrix (" + std::to_string(cols) + ", " + std::to_string(rows) +
+            ") cannot be broadcasted to shape (" + std::to_string(desire_c) + ", " + std::to_string(desire_r) + ")!\n");
     }
 
     if (rows == 1){
@@ -255,20 +253,59 @@ Matrix broadcast (Matrix &Mx, tuple<int, int> shape) {
         }
     }
     else if (rows != desire_r) {
-        throw std::runtime_error("Error: Matrix (" + to_string(cols) + ", " + to_string(rows) +
-            ") cannot be broadcasted to shape (" + to_string(desire_c) + ", " + to_string(desire_r) + ")!\n");
+        throw std::runtime_error("Error: Matrix (" + std::to_string(cols) + ", " + std::to_string(rows) +
+            ") cannot be broadcasted to shape (" + std::to_string(desire_c) + ", " + std::to_string(desire_r) + ")!\n");
     }
 
     return BroadcastMx;
 };
 
-///TODO: implement operations over matrixes
-///DEPENDED: broadcasting function
-//Matrix operator + (Matrix &) {};
-//Matrix operator - (Matrix &) {};
+tuple<int, int> Matrix::broadcast_shape (tuple<int, int> l_shape, tuple<int, int> r_shape) {
+    int rows = std::max(std::get<0>(l_shape), std::get<0>(r_shape));
+    int cols = std::max(std::get<1>(l_shape), std::get<1>(r_shape));
+
+    return std::make_tuple(rows, cols);
+};
+
+Matrix Matrix::operator + (Matrix & mtx) {
+    tuple<int, int> shape = broadcast_shape((*this).shape(), mtx.shape());
+    Matrix l = (*this).broadcast(shape);
+    Matrix r = mtx.broadcast(shape);
+    Matrix AddMx(std::get<0>(shape), std::get<1>(shape));
+
+    for (int i = 0; i < l.row_size; i++)
+        for (int j = 0; j < l.col_size; j++){
+            AddMx.matrix[i][j] = l.matrix[i][j] + r.matrix[i][j];
+        }
+
+    return AddMx;
+};
+
+Matrix Matrix::operator - (Matrix & mtx) {
+    tuple<int, int> shape = broadcast_shape((*this).shape(), mtx.shape());
+    Matrix l = (*this).broadcast(shape);
+    Matrix r = mtx.broadcast(shape);
+    Matrix SubMx(std::get<0>(shape), std::get<1>(shape));
+
+    for (int i = 0; i < l.row_size; i++)
+        for (int j = 0; j < l.col_size; j++){
+            SubMx.matrix[i][j] = l.matrix[i][j] - r.matrix[i][j];
+        }
+
+    return SubMx;
+};
+
 Matrix Matrix::operator * (Matrix &mtx) {
-    //broadcast((*this), mtx);
-    Matrix MultyMx;
+    tuple<int, int> shape = broadcast_shape((*this).shape(), mtx.shape());
+    Matrix l = (*this).broadcast(shape);
+    Matrix r = mtx.broadcast(shape);
+    Matrix MultyMx(std::get<0>(shape), std::get<1>(shape));
+
+    for (int i = 0; i < l.row_size; i++)
+        for (int j = 0; j < l.col_size; j++){
+            MultyMx.matrix[i][j] = l.matrix[i][j] * r.matrix[i][j];
+        }
+
     return MultyMx;
 };
 
@@ -336,15 +373,15 @@ double& Matrix::operator () (const int &row, const int &col) {
 //Pretty print function that outstreams 2-dim matrixes
 //directly to std::ofstream.
 void Matrix::print () {
-    cout << "[";
-    for (int i = 0; i < row_size; i++) {
-        (i == 0) ? cout << "" : cout << " ";
-        cout << " [";
-        for (int j = 0; j < col_size; j++) {
-            cout << " " << matrix[i][j];
+    std::cout << "[";
+    for (int i = 0; i < this->row_size; i++) {
+        (i == 0) ? std::cout << "" : std::cout << " ";
+        std::cout << " [";
+        for (int j = 0; j < this->col_size; j++) {
+            std::cout << " " << this->matrix[i][j];
         }
-        cout << " ]";
-        (i != row_size - 1) ? cout << "\n" : cout << "";
+        std::cout << " ]";
+        (i != this->row_size - 1) ? std::cout << "\n" : std::cout << "";
     }
-    cout << " ]\n";
+    std::cout << " ]\n";
 };

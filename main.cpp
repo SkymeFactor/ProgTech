@@ -41,10 +41,17 @@ int main (int argc, char ** argv) {
     std::cout << "Reshaped matrix:\n";
     b = b.reshape(1, -1);
     b.print();
+    std::cout << "bRows: " << std::get<0>(b.shape()) << " bCols: " << std::get<1>(b.shape()) << "\n";
     std::cout << "Broadcasted matrix [1x1]:\n";
-    a = Matrix(1, 1) + 1;
-    (broadcast(a, std::make_tuple(2, 2) )).print();
+    a = (Matrix(1, 1) + 1).broadcast(std::make_tuple(2, 1));
+    a.print();
     //b.T().print();
+    std::cout << "Elementwise addiction with broadcasting:\n";
+    (a + b).print();
+    std::cout << "Elementwise multipliction with broadcasting:\n";
+    a = Matrix(vector<vector<double>>{{0, 1, 2}});
+    b = Matrix(vector<vector<double>>{{0, 1, 2}, {3, 4, 5}, {6, 7, 8}});
+    (a * b).print();
     
     return 0;
 }
