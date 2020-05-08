@@ -4,6 +4,7 @@
 #include <vector>
 #include <tuple>
 #include <math.h>
+#include <omp.h>
 
 Matrix::Matrix(){
     this->row_size = 1;
@@ -17,9 +18,7 @@ Matrix::Matrix (int rows, int cols) {
     this->col_size = cols;
     this->matrix.resize(this->row_size);
     for (int i = 0; i < this->row_size; i++) {
-        for (int j = 0; j < this->col_size; j++) {
-            this->matrix[i].resize(this->col_size, 0.0);
-        }
+        this->matrix[i].resize(this->col_size, 0.0);
     }
 };
 
@@ -31,7 +30,7 @@ Matrix::Matrix (vector<vector<double>> data) {
 
 Matrix Matrix::dot (const Matrix &mtx) {
     if (this->row_size != mtx.col_size) {
-        throw std::runtime_error("Matrixes aren't compatible!");
+        throw std::runtime_error("Matrices aren't compatible!");
     }
     Matrix dotProduct(this->row_size, mtx.col_size);
     for (int i = 0; i < this->row_size; i++) {
@@ -138,7 +137,7 @@ Matrix Matrix::max (const int &axis) {
 };
 
 tuple<int, int> Matrix::shape () {
-    return std::make_tuple(this->row_size, this->col_size);
+    return std::tuple(this->row_size, this->col_size);
 };
 
 Matrix Matrix::reshape (int rows, int cols) {
@@ -264,11 +263,11 @@ tuple<int, int> Matrix::broadcast_shape (tuple<int, int> l_shape, tuple<int, int
     int rows = std::max(std::get<0>(l_shape), std::get<0>(r_shape));
     int cols = std::max(std::get<1>(l_shape), std::get<1>(r_shape));
 
-    return std::make_tuple(rows, cols);
+    return std::tuple(rows, cols);
 };
 
 Matrix Matrix::operator + (Matrix & mtx) {
-    tuple<int, int> shape = broadcast_shape((*this).shape(), mtx.shape());
+    auto shape = broadcast_shape((*this).shape(), mtx.shape());
     Matrix l = (*this).broadcast(shape);
     Matrix r = mtx.broadcast(shape);
     Matrix AddMx(std::get<0>(shape), std::get<1>(shape));
@@ -282,7 +281,7 @@ Matrix Matrix::operator + (Matrix & mtx) {
 };
 
 Matrix Matrix::operator - (Matrix & mtx) {
-    tuple<int, int> shape = broadcast_shape((*this).shape(), mtx.shape());
+    auto shape = broadcast_shape((*this).shape(), mtx.shape());
     Matrix l = (*this).broadcast(shape);
     Matrix r = mtx.broadcast(shape);
     Matrix SubMx(std::get<0>(shape), std::get<1>(shape));
@@ -296,15 +295,19 @@ Matrix Matrix::operator - (Matrix & mtx) {
 };
 
 Matrix Matrix::operator * (Matrix &mtx) {
-    tuple<int, int> shape = broadcast_shape((*this).shape(), mtx.shape());
+    auto shape = broadcast_shape((*this).shape(), mtx.shape());
     Matrix l = (*this).broadcast(shape);
     Matrix r = mtx.broadcast(shape);
     Matrix MultyMx(std::get<0>(shape), std::get<1>(shape));
 
-    for (int i = 0; i < l.row_size; i++)
+    omp_set_num_threads(omp_get_num_procs());
+    #pragma omp parallel for
+    for (int i = 0; i < l.row_size; i++){
         for (int j = 0; j < l.col_size; j++){
             MultyMx.matrix[i][j] = l.matrix[i][j] * r.matrix[i][j];
         }
+    }
+    
 
     return MultyMx;
 };
@@ -370,7 +373,7 @@ double& Matrix::operator () (const int &row, const int &col) {
     return this->matrix[row][col];
 };
 
-//Pretty print function that outstreams 2-dim matrixes
+//Pretty print function that outstreams 2-dim matrices
 //directly to std::ofstream.
 void Matrix::print () {
     std::cout << "[";
