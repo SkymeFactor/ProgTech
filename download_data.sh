@@ -3,7 +3,7 @@ cd data
 
 wget -c http://ufldl.stanford.edu/housenumbers/train_32x32.mat http://ufldl.stanford.edu/housenumbers/test_32x32.mat
 
-if [ -e "./test_32x32.mat" ] && [[ -e "./train_32x32.mat" ]]; then
+if [ -e "./test_32x32.mat" ] || [[ -e "./train_32x32.mat" ]]; then
 
     python ../Extractor/Extractor.py
 
