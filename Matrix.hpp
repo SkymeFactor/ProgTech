@@ -1,5 +1,4 @@
 #pragma once
-
 #include <vector>
 #include <tuple>
 
@@ -11,7 +10,7 @@ using std::tuple;
  * in a form of 2-dim array. It was developed to provide
  * a better experience while working with matrixes in terms
  * of NN's or ML. Most of it's functionality was inherited
- * on a conceptual level from the NumPy pachage.
+ * on a conceptual level from the NumPy package.
  * --------------------------------------------------------
  * Known issues:
  *    -Unfortunately, at the moment it only supports working
@@ -34,6 +33,8 @@ public:
     Matrix();
     Matrix(int, int);
     Matrix(vector<vector<double>>);
+    Matrix (std::tuple<int, int> shape) 
+        : Matrix(std::get<0>(shape), std::get<1>(shape)) {};
     Matrix dot (const Matrix &);
     Matrix T ();
     Matrix sum (const int &);
@@ -45,6 +46,7 @@ public:
     Matrix mean (const int &);
     Matrix log ();
     Matrix exp ();
+    Matrix sqrt();
     Matrix broadcast (tuple<int, int>);
     static tuple<int, int> broadcast_shape(tuple<int, int>, tuple<int, int>);
     Matrix operator * (Matrix &);
@@ -56,6 +58,7 @@ public:
     Matrix operator ^ (const double &); //Matrixes-powering
     Matrix& operator = (const Matrix &);
     Matrix& operator = (const double &);
+    Matrix& operator > (const double &);
     double& operator () (const int &, const int &);
     void print();
 };
