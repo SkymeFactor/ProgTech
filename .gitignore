@@ -1,6 +1,6 @@
 /.vscode
 /data
-a.out
-fnn.x86_64
+*.out
+*.x86_64
 *.o
-test.ipynb
+*.ipynb
