@@ -55,6 +55,7 @@ if __name__ == "__main__":
         
         # Writing to file
         write_datasets("train_32x32.dat", train_X, train_y)
+        print(train_X.shape)
         print(time.strftime("%Y-%M-%d %H:%M:%S") + " Train samples were successfully written to train_32x32.dat")
     except Exception as error:
         print(error)
