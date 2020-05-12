@@ -1,5 +1,7 @@
 #pragma once
+#include <vector>
 #include "Matrix.hpp"
+
 
 namespace nn {
 
@@ -7,7 +9,10 @@ namespace nn {
     private:
         
     public:
-
+        Model (int, int, int, double);
+        double feed_forward (Matrix, Matrix);
+        Matrix predict (Matrix);
+        std::vector<Matrix> get_params();
     };
 
     class Parameter {
@@ -35,7 +40,7 @@ namespace nn {
     private:
         Matrix result;
     public:
-        ReLULayer ();
+        ReLULayer () {};
         Matrix forward (Matrix X);
         Matrix backward (Matrix d_out);
     };
