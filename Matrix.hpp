@@ -35,6 +35,9 @@ public:
     Matrix(vector<vector<double>>);
     Matrix (std::tuple<int, int> shape) 
         : Matrix(std::get<0>(shape), std::get<1>(shape)) {};
+    Matrix& fill_zeros();
+    Matrix& fill_ones();
+    Matrix& fill_rand();
     Matrix dot (const Matrix &);
     Matrix T ();
     Matrix sum (const int &);
@@ -61,5 +64,5 @@ public:
     Matrix& operator = (const double &);
     Matrix operator > (double);
     double& operator () (const int &, const int &);
-    void print();
+    void print(bool np_insert = false);
 };
