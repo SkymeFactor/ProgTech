@@ -49,16 +49,17 @@ public:
     Matrix sqrt();
     Matrix broadcast (tuple<int, int>);
     static tuple<int, int> broadcast_shape(tuple<int, int>, tuple<int, int>);
-    Matrix operator * (Matrix &);
+    Matrix operator * (Matrix);
     Matrix operator * (double);
     Matrix operator + (Matrix &);
     Matrix operator + (double);
     Matrix operator - (Matrix &);
+    Matrix operator - ();
     Matrix operator - (double);
     Matrix operator ^ (const double &); //Matrixes-powering
     Matrix& operator = (const Matrix &);
     Matrix& operator = (const double &);
-    Matrix& operator > (const double &);
+    Matrix operator > (double);
     double& operator () (const int &, const int &);
     void print();
 };
