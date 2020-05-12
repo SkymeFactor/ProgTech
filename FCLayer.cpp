@@ -15,7 +15,13 @@ Matrix nn::FCLayer::forward (Matrix X) {
 }
 
 Matrix nn::FCLayer::backward (Matrix d_out) {
-    this->W.value.print(true);
+    // W gradient computing
+    Matrix w_grad = this->X.T().dot(d_out);
+    this->W.grad = this->W.grad + w_grad;
+    // B gradient computing
+    Matrix b_grad = d_out.sum(0);
+    this->B.grad = this->B.grad + b_grad;
+    // Layer gradient computing
     return d_out.dot(this->W.value.T());
 }
 
