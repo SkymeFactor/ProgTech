@@ -21,12 +21,12 @@ using std::tuple;
  *    -Getting a value by it's index should be done by using
  *    the round brackets instead of a squared ones.
  * --------------------------------------------------------
- * Last changes 13 mar 2020 by Skyme Factor.
+ * Last changes 12 may 2020 by Skyme Factor.
  **********************************************************/
 class Matrix {
 private :
-    int row_size; //rows i.e. x-axis
-    int col_size; //columns i.e. y-axis
+    int row_size; //rows i.e. 1-axis
+    int col_size; //columns i.e. 0-axis
     vector<vector<double>> matrix; //matrix itself
 
 public:
@@ -59,7 +59,9 @@ public:
     Matrix operator - (Matrix &);
     Matrix operator - ();
     Matrix operator - (double);
-    Matrix operator ^ (const double &); //Matrixes-powering
+    Matrix operator / (Matrix &&);
+    Matrix operator / (const double &);
+    Matrix operator ^ (const double &); //Matrices-powering
     Matrix& operator = (const Matrix &);
     Matrix& operator = (const double &);
     Matrix operator > (double);

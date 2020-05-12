@@ -246,26 +246,37 @@ Matrix Matrix::mean (const int &axis) {
 };
 
 Matrix Matrix::log () {
-    Matrix LogMX(this->row_size, this->col_size);
+    Matrix LogMx(this->row_size, this->col_size);
     for (int i = 0; i < this->row_size; i++) {
         #pragma omp parallel for
         for (int j = 0; j < this->col_size; j++) {
-            LogMX.matrix[i][j] = std::log(this->matrix[i][j]);
+            LogMx.matrix[i][j] = std::log(this->matrix[i][j]);
         }
     }
-    return LogMX;
+    return LogMx;
 };
 
 Matrix Matrix::exp() {
-    Matrix ExpMX(this->row_size, this->col_size);
+    Matrix ExpMx(this->row_size, this->col_size);
     for (int i = 0; i < this->row_size; i++) {
         #pragma omp parallel for
         for (int j = 0; j < this->col_size; j++) {
-            ExpMX.matrix[i][j] =  std::exp(this->matrix[i][j]);
+            ExpMx.matrix[i][j] =  std::exp(this->matrix[i][j]);
         }
     }
-    return ExpMX;
+    return ExpMx;
 };
+
+Matrix Matrix::sqrt() {
+    Matrix SqrtMx(this->row_size, this->col_size);
+    for (int i = 0; i < this->row_size; i++) {
+        #pragma omp parallel for
+        for (int j = 0; j < this->col_size; j++) {
+            SqrtMx.matrix[i][j] =  std::sqrt(this->matrix[i][j]);
+        }
+    }
+    return SqrtMx;
+}
 
 
 Matrix Matrix::broadcast (tuple<int, int> shape) {
@@ -308,7 +319,7 @@ tuple<int, int> Matrix::broadcast_shape (tuple<int, int> l_shape, tuple<int, int
     return std::tuple(rows, cols);
 };
 
-Matrix Matrix::operator + (Matrix & mtx) {
+Matrix Matrix::operator + (Matrix &mtx) {
     auto shape = broadcast_shape((*this).shape(), mtx.shape());
     Matrix l = (*this).broadcast(shape);
     Matrix r = mtx.broadcast(shape);
@@ -398,6 +409,35 @@ Matrix Matrix::operator - () {
     }
     return MinusMx;
 };
+
+Matrix Matrix::operator / (Matrix &&mtx) {
+    auto shape = broadcast_shape((*this).shape(), mtx.shape());
+    Matrix l = (*this).broadcast(shape);
+    Matrix r = std::forward<Matrix>(mtx.broadcast(shape));
+    Matrix DivMx(shape);
+
+    for (int i = 0; i < l.row_size; i++){
+        //#pragma omp parallel for
+        for (int j = 0; j < l.col_size; j++){
+            std::cout << l.matrix[i][j] << " / " << r.matrix[i][j] << " = ";
+            DivMx.matrix[i][j] = l.matrix[i][j] / r.matrix[i][j];
+            std::cout << DivMx.matrix[i][j] << "\n";
+        }
+    }
+    
+    return DivMx;
+}
+
+Matrix Matrix::operator / (const double &val) {
+    Matrix DivMx(this->shape());
+    for (int i = 0; i < this->row_size; i++) {
+        #pragma omp parallel for
+        for (int j = 0; j < this->col_size; j++) {
+            DivMx.matrix[i][j] = this->matrix[i][j] / val;
+        }
+    }
+    return DivMx;
+}
 
 Matrix Matrix::operator ^ (const double &deg) {
     Matrix PowMx;
