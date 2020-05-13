@@ -6,7 +6,7 @@ using std::vector;
 using std::tuple;
 
 /***********************************************************
- * Class Matrix is a class that holds the values inside
+ * Class Matrix is a class that holds the values inside it
  * in a form of 2-dim array. It was developed to provide
  * a better experience while working with matrixes in terms
  * of NN's or ML. Most of it's functionality was inherited
@@ -21,7 +21,7 @@ using std::tuple;
  *    -Getting a value by it's index should be done by using
  *    the round brackets instead of a squared ones.
  * --------------------------------------------------------
- * Last changes 12 may 2020 by Skyme Factor.
+ * Last changes 13 may 2020 by Skyme Factor.
  **********************************************************/
 class Matrix {
 private :

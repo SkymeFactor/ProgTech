@@ -91,8 +91,8 @@ Matrix Matrix::sum (const int &axis) {
 
     if (axis == 0) {
         Sum = Matrix(1 , this->col_size);
+        #pragma omp parallel for
         for (int i = 0; i < this->col_size; i++) {
-            #pragma omp parallel for
             for (int j = 0; j < this->row_size; j++) {
                 Sum.matrix[0][i] += this->matrix[j][i];
             }
@@ -100,8 +100,8 @@ Matrix Matrix::sum (const int &axis) {
     }
     else if (axis == 1) {
         Sum = Matrix(this->row_size, 1);
+        #pragma omp parallel for
         for (int i = 0; i < this->row_size; i++) {
-            #pragma omp parallel for
             for (int j = 0; j < this->col_size; j++) {
                 Sum.matrix[i][0] += this->matrix[i][j]; 
             }
@@ -257,7 +257,7 @@ Matrix Matrix::log () {
 };
 
 Matrix Matrix::exp() {
-    Matrix ExpMx(this->row_size, this->col_size);
+    Matrix ExpMx(this->shape());
     for (int i = 0; i < this->row_size; i++) {
         #pragma omp parallel for
         for (int j = 0; j < this->col_size; j++) {
@@ -417,11 +417,9 @@ Matrix Matrix::operator / (Matrix &&mtx) {
     Matrix DivMx(shape);
 
     for (int i = 0; i < l.row_size; i++){
-        //#pragma omp parallel for
+        #pragma omp parallel for
         for (int j = 0; j < l.col_size; j++){
-            std::cout << l.matrix[i][j] << " / " << r.matrix[i][j] << " = ";
             DivMx.matrix[i][j] = l.matrix[i][j] / r.matrix[i][j];
-            std::cout << DivMx.matrix[i][j] << "\n";
         }
     }
     
@@ -462,7 +460,7 @@ Matrix& Matrix::operator = (const double & val) {
     for (int i = 0; i < this->row_size; i++) {
         #pragma omp parallel for
         for (int j = 0; j < this->col_size; j++) {
-            this->matrix[i][j] = this->matrix[i][j] * val;
+            this->matrix[i][j] = val;
         }
     }
     return (*this);
