@@ -1,6 +1,4 @@
 #include "NeuralNet.hpp"
-#include "Matrix.hpp"
-#include <iostream>
 
 using nn::Parameter;
 
