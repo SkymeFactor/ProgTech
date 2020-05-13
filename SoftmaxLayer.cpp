@@ -8,7 +8,6 @@ std::pair<double, Matrix> nn::SoftmaxLayer::l2_reg (Matrix &W, const double &reg
 }
 
 Matrix nn::SoftmaxLayer::softmax (Matrix &predictions) {
-    int p_dim = predictions.ndim();
 
     Matrix predictions_max = predictions.max(1);
     predictions = predictions - predictions_max;
