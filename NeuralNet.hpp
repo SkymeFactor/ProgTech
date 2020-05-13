@@ -6,26 +6,17 @@
  * nn - Neural Network namespace, contains all classes to create a simple perceptrone model.
  * --------------------------------------------------------
  * classes:
- *   Model - NN model, consist of some layers
  *   Parameter - Matrix based parameter for layers
+ *   Layer - base class for all layers except SoftmaxLayer
  *   FCLayer - fully connected layer, parameters: w, b
  *   ReLULayer - ReLU layer, parameters: no params
  *   SoftmaxLayer - softmax, cross-entropy and l2 static functions
  *   AdamOptim - adam optimizer, parameters: beta1, beta2, epsilon
+ *   Model - NN model, consist of some layers
  * --------------------------------------------------------
  * Last changes 13 may 2020 by Skyme Factor.
  **********************************************************/
 namespace nn {
-
-    class Model {
-    private:
-        
-    public:
-        Model (int, int, int, double);
-        double feed_forward (Matrix, Matrix);
-        Matrix predict (Matrix);
-        std::vector<Matrix> get_params();
-    };
 
     class Parameter {
     public:
@@ -38,24 +29,35 @@ namespace nn {
         }
     };
 
-    class FCLayer {
+    class Layer {
+    protected:
+        Matrix X;
+        virtual ~Layer() {};
+    public:
+        virtual Matrix forward (Matrix &) = 0;
+        virtual Matrix backward (Matrix &) = 0;
+        //virtual std::pair<Parameter, Parameter> get_params () = 0;
+    };
+
+    class FCLayer : public Layer {
     private:
         Parameter W, B;
         Matrix X;
     public:
         explicit FCLayer (int n_input, int n_output);
-        Matrix forward (Matrix X);
-        Matrix backward (Matrix d_out);
+        virtual Matrix forward (Matrix &X) override;
+        virtual Matrix backward (Matrix &d_out) override;
         std::pair<Parameter, Parameter> get_params ();
     };
 
-    class ReLULayer {
+    class ReLULayer : public Layer {
     private:
-        Matrix result;
+        Matrix X;
     public:
         ReLULayer () {};
-        Matrix forward (Matrix X);
-        Matrix backward (Matrix d_out);
+        virtual Matrix forward (Matrix &X) override;
+        virtual Matrix backward (Matrix &d_out) override;
+        //virtual std::pair<Parameter, Parameter> get_params () override;
     };
 
     class SoftmaxLayer {
@@ -91,5 +93,25 @@ namespace nn {
         *   <T> learning_rate - learning rate for the model
         */
         Matrix update (Matrix w, Matrix d_w, T learning_rate);
+    };
+
+    class Model {
+    private:
+        double reg;
+        vector<Layer *> layers;
+        SoftmaxLayer sml;
+    public:
+        /*
+            * Explicit constructor of class Model
+            * Parameters:
+            *  const int &n_input - input layer size
+            *  const int &n_output - number of classes to predict
+            *  const int &n_hidden - hidden layer(s) size.
+        */
+        Model () {};
+        explicit Model (const int &, const int &, const int &, const double &);
+        double feed_forward (Matrix &, Matrix &);
+        Matrix predict (Matrix &);
+        std::vector<Parameter> get_params();
     };
 }
