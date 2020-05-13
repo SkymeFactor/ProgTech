@@ -1,5 +1,4 @@
 #include "NeuralNet.hpp"
-#include "Matrix.hpp"
 #include <math.h>
 
 template <class T>
