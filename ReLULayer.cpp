@@ -1,5 +1,5 @@
 #include "NeuralNet.hpp"
-#include "Matrix.hpp"
+
 
 Matrix nn::ReLULayer::forward (Matrix X) {
     this->result = (X > 0);
