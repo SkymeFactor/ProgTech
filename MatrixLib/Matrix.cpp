@@ -18,8 +18,10 @@ Matrix::Matrix (int rows, int cols) {
     this->row_size = rows;
     this->col_size = cols;
     this->matrix.resize(this->row_size);
-    #pragma omp parallel for
+    // OMP can never be used while vector is going to be resized!
+    //#pragma omp parallel for
     for (int i = 0; i < this->row_size; i++) {
+        //#pragma omp critical
         this->matrix[i].resize(this->col_size);
     }
 };
@@ -31,29 +33,35 @@ Matrix::Matrix (vector<vector<double>> data) {
 };
 
 Matrix& Matrix::fill_ones () {
-    for (int i = 0; i < this->row_size; i++)
+    #pragma omp parallel for
+    for (int i = 0; i < this->row_size; i++) {
         #pragma omp parallel for
         for (int j = 0; j < this->col_size; j++)
             this->matrix[i][j] = 1;
+    }
     return (*this);
 }
 
 Matrix& Matrix::fill_zeros () {
-    for (int i = 0; i < this->row_size; i++)
+    #pragma omp parallel for
+    for (int i = 0; i < this->row_size; i++) {
         #pragma omp parallel for
         for (int j = 0; j < this->col_size; j++)
             this->matrix[i][j] = 0;
+    }
     return (*this);
 }
 
 Matrix& Matrix::fill_rand () {
-    std::random_device rd{};
-    std::mt19937 gen{rd()};
-    std::normal_distribution<> d(0, 1);
-    for (int i = 0; i < this->row_size; i++)
+    #pragma omp parallel for
+    for (int i = 0; i < this->row_size; i++){
+        std::random_device rd{};
+        std::mt19937 gen{rd()};
+        std::normal_distribution<> d(0, 1);
         #pragma omp parallel for
         for (int j = 0; j < this->col_size; j++)
             this->matrix[i][j] = d(gen);
+    }
     return (*this);
 }
 
@@ -61,13 +69,18 @@ Matrix Matrix::dot (const Matrix &mtx) {
     if (this->col_size != mtx.row_size) {
         throw std::runtime_error("Matrices aren't compatible!");
     }
+
     Matrix dotProduct(this->row_size, mtx.col_size);
+    #pragma omp parallel for
     for (int i = 0; i < this->row_size; i++) {
         #pragma omp parallel for
         for (int j = 0; j < mtx.col_size; j++) {
+            double product_sum = 0.0;
+            #pragma omp parallel for reduction(+: product_sum)
             for (int k = 0; k < this->col_size; k++){
-                dotProduct.matrix[i][j] += this->matrix[i][k] * mtx.matrix[k][j];
+                product_sum += this->matrix[i][k] * mtx.matrix[k][j];
             }
+            dotProduct.matrix[i][j] = product_sum;
         }
     }
     return dotProduct;
@@ -75,7 +88,7 @@ Matrix Matrix::dot (const Matrix &mtx) {
 
 Matrix Matrix::T () {
     Matrix Transposed(this->col_size, this->row_size);
-
+    #pragma omp parallel for
     for (int i = 0; i < this->col_size; i++) {
         #pragma omp parallel for
         for (int j = 0; j < this->row_size; j++) {
@@ -92,19 +105,25 @@ Matrix Matrix::sum (const int &axis) {
     if (axis == 0) {
         Sum = Matrix(1 , this->col_size);
         #pragma omp parallel for
-        for (int i = 0; i < this->col_size; i++) {
-            for (int j = 0; j < this->row_size; j++) {
-                Sum.matrix[0][i] += this->matrix[j][i];
+        for (int j = 0; j < this->col_size; j++) {
+            double col_sum = 0.0;
+            #pragma omp parallel for reduction(+: col_sum)
+            for (int i = 0; i < this->row_size; i++) {
+                col_sum += this->matrix[i][j];
             }
+            Sum.matrix[0][j] = col_sum;
         }
     }
     else if (axis == 1) {
         Sum = Matrix(this->row_size, 1);
         #pragma omp parallel for
         for (int i = 0; i < this->row_size; i++) {
+            double row_sum = 0.0;
+            #pragma omp parallel for reduction(+: row_sum)
             for (int j = 0; j < this->col_size; j++) {
-                Sum.matrix[i][0] += this->matrix[i][j]; 
+                row_sum += this->matrix[i][j];
             }
+            Sum.matrix[i][0] = row_sum;
         }
     }
     else  {
@@ -119,9 +138,10 @@ Matrix Matrix::argmax (const int &axis) {
     Matrix maxMx = (*this).max(axis);
     if (axis == 0) {
         argmaxMx = Matrix(1 , this->col_size);
-        for (int i = 0; i < this->row_size; i++){
+        #pragma omp parallel for
+        for (int j = 0; j < this->col_size; j++){
             #pragma omp parallel for
-            for (int j = 0; j < this->col_size; j++){
+            for (int i = 0; i < this->row_size; i++){
                 if (this->matrix[i][j] == maxMx.matrix[0][j])
                     argmaxMx.matrix[0][j] = i;
             }
@@ -129,9 +149,10 @@ Matrix Matrix::argmax (const int &axis) {
     }
     else if (axis == 1) {
         argmaxMx= Matrix(this->row_size, 1);
-        for (int j = 0; j < this->col_size; j++){
+        #pragma omp prarallel for
+        for (int i = 0; i < this->row_size; i++){
             #pragma omp parallel for
-            for (int i = 0; i < this->row_size; i++){
+            for (int j = 0; j < this->col_size; j++){
                 if (this->matrix[i][j] == maxMx.matrix[i][0])
                     argmaxMx.matrix[i][0] = j;
             }
@@ -147,9 +168,10 @@ Matrix Matrix::max (const int &axis) {
     Matrix maxMx;
     if (axis == 0) {
         maxMx = Matrix(1 , this->col_size);
-        for (int i = 0; i < this->row_size; i++){
+        #pragma omp parallel for
+        for (int j = 0; j < this->col_size; j++){
             #pragma omp parallel for
-            for (int j = 0; j < this->col_size; j++){
+            for (int i = 0; i < this->row_size; i++){
                 if (this->matrix[i][j] > maxMx.matrix[0][j])
                     maxMx.matrix[0][j] = this->matrix[i][j];
             }
@@ -157,9 +179,10 @@ Matrix Matrix::max (const int &axis) {
     }
     else if (axis == 1) {
         maxMx= Matrix(this->row_size, 1);
-        for (int j = 0; j < this->col_size; j++){
+        #pragma omp parallel for
+        for (int i = 0; i < this->row_size; i++){
             #pragma omp parallel for
-            for (int i = 0; i < this->row_size; i++){
+            for (int j = 0; j < this->col_size; j++){
                 if (this->matrix[i][j] > maxMx.matrix[i][0])
                     maxMx.matrix[i][0] = this->matrix[i][j];
             }
@@ -172,7 +195,7 @@ Matrix Matrix::max (const int &axis) {
 };
 
 tuple<int, int> Matrix::shape () {
-    return std::tuple(this->row_size, this->col_size);
+    return std::tuple<int, int>(this->row_size, this->col_size);
 };
 
 Matrix Matrix::reshape (int rows, int cols) {
@@ -189,8 +212,9 @@ Matrix Matrix::reshape (int rows, int cols) {
     Matrix reshapedMx = Matrix (rows, cols);
     
     int ind_x = 0, ind_y = 0;
+    #pragma omp parallel for
     for (int i = 0; i < rows; i++){
-        #pragma omp parallel for
+        //------------------------------------------------------------------------------------------------------------------ << Here
         for (int j = 0; j < cols; j++) {
                 reshapedMx.matrix[i][j] = this->matrix[ind_x][ind_y];
                 if (ind_y < this->col_size - 1) {
@@ -216,28 +240,34 @@ Matrix Matrix::mean (const int &axis) {
     Matrix meanMx;
     if (axis == 0) {
         meanMx = Matrix(1 , this->col_size);
-        for (int i = 0; i < this->row_size; i++){
-            #pragma omp parallel for
-            for (int j = 0; j < this->col_size; j++){
-                meanMx.matrix[0][j] += this->matrix[i][j];
+        #pragma omp parallel for
+        for (int j = 0; j < this->col_size; j++){
+            double col_sum;
+            #pragma omp parallel for reduction(+: col_sum)
+            for (int i = 0; i < this->row_size; i++){
+                col_sum += this->matrix[i][j];
             }
+            meanMx.matrix[0][j] = col_sum;
         }
         #pragma omp parallel for
-        for (int i = 0; i < this->col_size; i++)
-            meanMx.matrix[0][i] = meanMx.matrix[0][i] / this->row_size;
+        for (int j = 0; j < this->col_size; j++)
+            meanMx.matrix[0][j] /= this->col_size;
 
     }
     else if (axis == 1) {
         meanMx= Matrix(this->row_size, 1);
-        for (int j = 0; j < this->col_size; j++){
-            #pragma omp parallel for
-            for (int i = 0; i < this->row_size; i++){
-                meanMx.matrix[i][0] += this->matrix[i][j];
+        #pragma omp parallel for
+        for (int i = 0; i < this->row_size; i++){
+            double row_sum;
+            #pragma omp parallel for reduction(+: row_sum)
+            for (int j = 0; j < this->col_size; j++){
+                row_sum += this->matrix[i][j];
             }
+            meanMx.matrix[i][0] = row_sum;
         }
         #pragma omp parallel for
         for (int i = 0; i < this->row_size; i++)
-            meanMx.matrix[i][0] = meanMx.matrix[i][0] / this->col_size;
+            meanMx.matrix[i][0] /= this->row_size;
     }
     else {
         throw std::runtime_error("Error: There is no " + std::to_string(axis) + " axis!\n");
@@ -247,6 +277,7 @@ Matrix Matrix::mean (const int &axis) {
 
 Matrix Matrix::log () {
     Matrix LogMx(this->row_size, this->col_size);
+    #pragma omp parallel for
     for (int i = 0; i < this->row_size; i++) {
         #pragma omp parallel for
         for (int j = 0; j < this->col_size; j++) {
@@ -258,9 +289,11 @@ Matrix Matrix::log () {
 
 Matrix Matrix::exp() {
     Matrix ExpMx(this->shape());
+    #pragma omp parallel for
     for (int i = 0; i < this->row_size; i++) {
         #pragma omp parallel for
         for (int j = 0; j < this->col_size; j++) {
+            //#pragma omp critical
             ExpMx.matrix[i][j] =  std::exp(this->matrix[i][j]);
         }
     }
@@ -269,10 +302,12 @@ Matrix Matrix::exp() {
 
 Matrix Matrix::sqrt() {
     Matrix SqrtMx(this->row_size, this->col_size);
+    #pragma omp parallel for
     for (int i = 0; i < this->row_size; i++) {
         #pragma omp parallel for
         for (int j = 0; j < this->col_size; j++) {
-            SqrtMx.matrix[i][j] =  std::sqrt(this->matrix[i][j]);
+            //#pragma omp critical
+            SqrtMx.matrix[i][j] = std::sqrt(this->matrix[i][j]);
         }
     }
     return SqrtMx;
@@ -316,7 +351,7 @@ tuple<int, int> Matrix::broadcast_shape (tuple<int, int> l_shape, tuple<int, int
     int rows = std::max(std::get<0>(l_shape), std::get<0>(r_shape));
     int cols = std::max(std::get<1>(l_shape), std::get<1>(r_shape));
 
-    return std::tuple(rows, cols);
+    return std::tuple<int, int>(rows, cols);
 };
 
 Matrix Matrix::operator + (Matrix &mtx) {
@@ -325,6 +360,7 @@ Matrix Matrix::operator + (Matrix &mtx) {
     Matrix r = mtx.broadcast(shape);
     Matrix AddMx(std::get<0>(shape), std::get<1>(shape));
 
+    #pragma omp parallel for
     for (int i = 0; i < l.row_size; i++)
         #pragma omp parallel for
         for (int j = 0; j < l.col_size; j++){
@@ -339,7 +375,8 @@ Matrix Matrix::operator - (Matrix & mtx) {
     Matrix l = (*this).broadcast(shape);
     Matrix r = mtx.broadcast(shape);
     Matrix SubMx(std::get<0>(shape), std::get<1>(shape));
-
+    
+    #pragma omp parallel for
     for (int i = 0; i < l.row_size; i++)
         #pragma omp parallel for
         for (int j = 0; j < l.col_size; j++){
@@ -354,7 +391,8 @@ Matrix Matrix::operator * (Matrix mtx) {
     Matrix l = (*this).broadcast(shape);
     Matrix r = mtx.broadcast(shape);
     Matrix MultyMx(std::get<0>(shape), std::get<1>(shape));
-
+    std::cout << omp_get_nested() << ", " << omp_get_num_procs() << "\n";
+    #pragma omp parallel for
     for (int i = 0; i < l.row_size; i++){
         #pragma omp parallel for
         for (int j = 0; j < l.col_size; j++){
@@ -368,6 +406,8 @@ Matrix Matrix::operator * (Matrix mtx) {
 
 Matrix Matrix::operator * (double val) {
     Matrix MultyMx(this->shape());
+    
+    #pragma omp parallel for
     for (int i = 0; i < this->row_size; i++) {
         #pragma omp parallel for
         for (int j = 0; j < this->col_size; j++) {
@@ -379,6 +419,8 @@ Matrix Matrix::operator * (double val) {
 
 Matrix Matrix::operator + (double val) {
     Matrix AddMx(this->shape());
+    
+    #pragma omp parallel for
     for (int i = 0; i < this->row_size; i++) {
         #pragma omp parallel for
         for (int j = 0; j < this->col_size; j++) {
@@ -390,6 +432,8 @@ Matrix Matrix::operator + (double val) {
 
 Matrix Matrix::operator - (double val) {
     Matrix DiffMx(this->shape());
+    
+    #pragma omp parallel for
     for (int i = 0; i < this->row_size; i++) {
         #pragma omp parallel for
         for (int j = 0; j < this->col_size; j++) {
@@ -401,6 +445,8 @@ Matrix Matrix::operator - (double val) {
 
 Matrix Matrix::operator - () {
     Matrix MinusMx(this->shape());
+
+    #pragma omp parallel for
     for (int i = 0; i < this->row_size; i++) {
         #pragma omp parallel for
         for (int j = 0; j < this->col_size; j++) {
@@ -416,6 +462,7 @@ Matrix Matrix::operator / (Matrix &&mtx) {
     Matrix r = std::forward<Matrix>(mtx.broadcast(shape));
     Matrix DivMx(shape);
 
+    #pragma omp parallel for
     for (int i = 0; i < l.row_size; i++){
         #pragma omp parallel for
         for (int j = 0; j < l.col_size; j++){
@@ -428,6 +475,8 @@ Matrix Matrix::operator / (Matrix &&mtx) {
 
 Matrix Matrix::operator / (const double &val) {
     Matrix DivMx(this->shape());
+    
+    #pragma omp parallel for
     for (int i = 0; i < this->row_size; i++) {
         #pragma omp parallel for
         for (int j = 0; j < this->col_size; j++) {
@@ -440,9 +489,12 @@ Matrix Matrix::operator / (const double &val) {
 Matrix Matrix::operator ^ (const double &deg) {
     Matrix PowMx;
     PowMx = (*this);
+    
+    #pragma omp parallel for
     for (int i = 0; i < PowMx.row_size; i++){
         #pragma omp parallel for
         for (int j = 0; j < PowMx.col_size; j++){
+            #pragma omp critical
             PowMx.matrix[i][j] = std::pow(PowMx.matrix[i][j], deg);
         }
     }
@@ -457,6 +509,7 @@ Matrix& Matrix::operator = (const Matrix & mtx) {
 };
 
 Matrix& Matrix::operator = (const double & val) {
+    #pragma omp parallel for
     for (int i = 0; i < this->row_size; i++) {
         #pragma omp parallel for
         for (int j = 0; j < this->col_size; j++) {
@@ -466,11 +519,31 @@ Matrix& Matrix::operator = (const double & val) {
     return (*this);
 };
 
+bool Matrix::operator == (const Matrix & mtx) {
+    if (this->row_size != mtx.row_size || this->col_size != mtx.col_size) {
+        return false;
+    }else {
+        bool result = true;
+        std::cout << omp_get_max_threads() << ", " << omp_get_num_procs() << "\n";
+        #pragma omp parallel for
+        for (int i = 0; i < this->row_size; i++) {
+            #pragma omp parallel for
+            for (int j = 0; j < this->col_size; j++) {
+                if ( this->matrix[i][j] != mtx.matrix[i][j])
+                    result = false;
+            }
+        }
+        return result;
+    }
+};
+
 Matrix Matrix::operator > (double val) {
     Matrix GtMx(this->shape());
+    
+    #pragma omp parallel for
     for (int i = 0; i < this->row_size; i++) {
         #pragma omp parallel for
-        for (int j = 0; j < this->col_size; j++) {  
+        for (int j = 0; j < this->col_size; j++) {
             if (this->matrix[i][j] > val)
                 GtMx.matrix[i][j] = 1;
             else
