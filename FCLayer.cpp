@@ -9,7 +9,9 @@ nn::FCLayer::FCLayer (int n_input, int n_output) {
 
 Matrix nn::FCLayer::forward (Matrix &X) {
     this->X = X;
-    return this->X.dot(this->W.value) + this->B.value;
+    Matrix result = this->X.dot(this->W.value);
+    
+    return result + this->B.value;
 }
 
 Matrix nn::FCLayer::backward (Matrix &d_out) {
@@ -23,6 +25,6 @@ Matrix nn::FCLayer::backward (Matrix &d_out) {
     return d_out.dot(this->W.value.T());
 }
 
-std::pair<Parameter, Parameter> nn::FCLayer::get_params () {
-    return std::pair<Parameter, Parameter> (this->W, this->B);
+std::pair<Parameter*, Parameter*> nn::FCLayer::get_params () {
+    return std::pair<Parameter*, Parameter*> (&(this->W), &(this->B));
 }

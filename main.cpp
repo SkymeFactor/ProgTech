@@ -1,39 +1,9 @@
 #include <iostream>
 #include <algorithm>
 #include <chrono>
-#include <cassert>
-#include <functional>
 #include "MatrixLib/Matrix.hpp"
 #include "NeuralNet.hpp"
 #include "DataLoader.hpp"
-
-void check_gradient(std::function<std::pair<double, Matrix>(Matrix)> helper_func, Matrix x, double delta, double tol) {
-    bool is_error = false;
-    Matrix analytic_grad = helper_func(x).second;
-    assert(analytic_grad.shape() == x.shape());
-
-    for (int i = 0; i < (int)std::get<0>(x.shape()); i++)
-        for (int j = 0; j < (int)std::get<1>(x.shape()); j++){
-            double analytic_grad_at_ix = analytic_grad(i, j);
-            double x_ix = x(i, j);
-            x(i, j) = x_ix + delta;
-            auto pos = helper_func(x).first;
-            x(i, j) = x_ix - delta;
-            auto neg = helper_func(x).first;
-            x(i, j) = x_ix;
-
-            double numeric_grad_at_ix = (pos - neg) / (2 * delta);
-            
-            if (!(std::abs(numeric_grad_at_ix - analytic_grad_at_ix) <= (1e-8 + tol * std::abs(analytic_grad_at_ix)))) {
-                std::cout << "Gradients are different at (" << i << ", " << j << "). Analytic: " << analytic_grad_at_ix << ", Numeric: " \
-                    << numeric_grad_at_ix << "\n";
-                is_error = true;
-                break;
-            }
-        }
-    if (!is_error)
-        std::cout << "Gradient check passed!\n";
-}
 
 
 int main (int argc, char * argv[]) {
@@ -132,6 +102,7 @@ int main (int argc, char * argv[]) {
                 std::cout << "Loss: " << model.feed_forward(x, y) << "\n";
         }
     } else {
+        
         // Real NN workcycle comes down here
         
         // Set fixed output precision
@@ -169,7 +140,7 @@ int main (int argc, char * argv[]) {
             std::cout << dur << " milliseconds\n";
 
         // Display the best results
-        std::cout << "\nBest results:\nLoss: " << *std::min_element(results[0].begin(), results[0].end()) \
+        std::cout << "\nBest results:\nLoss: " << *std::min_element(results[0].begin(), results[0].end()) / 2 \
                 << ", Train accuracy: " << *std::max_element(results[1].begin(), results[1].end()) \
                 << ", Valid accuracy: " << *std::max_element(results[2].begin(), results[2].end()) << "\n";
 
@@ -183,95 +154,6 @@ int main (int argc, char * argv[]) {
         // Compute the final score accuracy
         double test_accuracy = nn::Trainer::compute_accuracy(test_pred, test.second);
         std::cout << std::defaultfloat << "\nNeural net test accuracy: " << test_accuracy << "\n";
-        
-        /*Matrix x(vector<vector<double>>{{1, -2, 3}, {-1, 2, 0.1}});
-        double delta = 1e-5, tol = 1e-4;
-        nn::FCLayer layer(3, 4);
-
-        nn::Parameter* param_w = layer.get_params().second;
-        nn::Parameter* param_b = layer.get_params().second;
-        Matrix initial_w = param_w->value;
-        Matrix initial_w_b = param_b->value;
-
-        Matrix output = layer.forward(x);
-        Matrix out_weifht(output);
-        out_weifht.fill_rand();
-
-        auto helper_func_param_w = [&](Matrix w)->std::pair<double, Matrix> {
-            param_w->value = w;
-            output = layer.forward(x);
-            double loss = (output * out_weifht).sum(0).sum(1)(0, 0);
-            Matrix d_out(output);
-            d_out = (d_out.fill_ones()) * out_weifht;
-            layer.backward(d_out);
-            Matrix grad = param_w->grad;
-            return std::pair<double, Matrix>(loss, grad);
-        };
-
-        check_gradient(helper_func_param_w, initial_w, delta, tol);
-
-        layer = nn::FCLayer(3, 4);
-        output = layer.forward(x);
-        out_weifht.fill_rand();
-        
-        auto helper_func_param_b = [&](Matrix w)->std::pair<double, Matrix> {
-            param_b->value = w;
-            output = layer.forward(x);
-            double loss = (output * out_weifht).sum(0).sum(1)(0, 0);
-            Matrix d_out(output);
-            d_out = (d_out.fill_ones()) * out_weifht;
-            layer.backward(d_out);
-            Matrix grad = param_b->grad;
-            return std::pair<double, Matrix>(loss, grad);
-        };
-        
-        check_gradient(helper_func_param_b, initial_w_b, delta, tol);
-
-        layer = nn::FCLayer(3, 4);
-        output = layer.forward(x);
-        out_weifht.fill_rand();
-
-        auto helper_func_layer = [&](Matrix x)->std::pair<double, Matrix> {
-            Matrix output = layer.forward(x);
-            double loss = (output * out_weifht).sum(0).sum(1)(0, 0);
-            Matrix d_out(output);
-            d_out = (d_out.fill_ones()) * out_weifht;
-            Matrix grad = layer.backward(d_out);
-            return std::pair<double, Matrix>(loss, grad);
-        };
-
-        check_gradient(helper_func_layer, x, delta, tol);
-
-        DataLoader data_loader;
-        DATASET_TYPE train_data = data_loader.load_dataset("data/train_32x32.dat", std::pair<int, int>(100, 3072));
-        DATASET_TYPE test_data = data_loader.load_dataset("data/test_32x32.dat", std::pair<int, int>(100, 3072));
-        
-        data_loader.prepare_dataset(train_data.first, test_data.first);
-        
-        vector<int> idx{0, 1, 2};
-        auto train = data_loader.load_as_matrix(train_data.first, train_data.second, idx);
-
-        nn::Model model = nn::Model(3072, 10, 3, 0);
-        std::cout << "Train_X.shape = (" << std::get<0>(train.first.shape()) << ", " << std::get<1>(train.first.shape()) << ")\n";
-        std::cout << "Train_y.shape = (" << std::get<0>(train.second.shape()) << ", " << std::get<1>(train.second.shape()) << ")\n";
-        double loss = model.feed_forward(train.first, train.second);
-        std::cout << loss << "\n";
-
-        auto params = model.get_params();
-
-        for (auto it = params.rbegin(); it != params.rend(); it++) {
-            std::cout << "Checking gradient for param " << typeid((*it)).name() << "\n";
-            initial_w = (*it)->value;
-
-            auto helper_func = [&](Matrix w)->std::pair<double, Matrix> {
-                (*it)->value = w;
-                double loss = model.feed_forward(train.first, train.second);
-                Matrix grad = (*it)->grad;
-                return std::pair<double, Matrix>(loss, grad);
-            };
-
-            check_gradient(helper_func, initial_w, delta, tol);
-        }*/
     }
 
     return 0;
