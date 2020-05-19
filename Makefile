@@ -9,7 +9,7 @@
 CC=g++
 CFLAGS=-c -Wall -std=c++17 -fopenmp
 LIBFLAGS=-shared -O3 -fpic -fopenmp
-SOURCES=main.cpp ReLULayer.cpp FCLayer.cpp Model.cpp DataLoader.cpp AdamOptim.cpp SoftmaxLayer.cpp Trainer.cpp
+SOURCES=main.cpp ReLULayer.cpp FCLayer.cpp Model.cpp DataLoader.cpp SGDOptim.cpp SoftmaxLayer.cpp Trainer.cpp
 OBJECTS=$(SOURCES:.cpp=.o)
 LIBSOURCES=./MatrixLib/Matrix.cpp
 LIB=libMatrix.so
